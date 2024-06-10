@@ -63,11 +63,6 @@ def main():
                                 print(line, end='')
                     command_outputs += command_output
                 continue
-            elif '```tool_code' in component:
-                # We want to execute this as python code
-                python_code = component[12:-3]
-                print(f'Python code: {python_code}')
-                exec(python_code)
 
             lines = component.split('\n')
             name = lines[0][3:]
@@ -79,7 +74,7 @@ def main():
                 if len(token := comment_syntax.split(' ')) == 2:
                     comment_start, comment_end = token
                     if comment.startswith(comment_start) and comment.endswith(comment_end):
-                        filename = comment[len(comment_start):-len(comment_end)+1].strip()
+                        filename = comment[len(comment_start):-len(comment_end)-1].strip()
                 else:
                     filename = comment[len(comment_syntax):].strip()
                 if filename:
