@@ -7,6 +7,18 @@ from vertexai.preview.generative_models import GenerationResponse
 import pathlib
 import json
 
+file_types = [
+    'python', 'sh', 'txt', 'html', 'css', 'js', 'json', 'xml', 'yaml', 'yml', 'md', 'csv', 'tsv', 'sql', 'java', 'c', 'cpp', 'h', 'hpp', 'cs', 'php', 'rb', 'pl', 'go', 'rs', 'swift', 'kt', 'clj', 'cljs', 'r', 'm', 'jl', 'groovy', 'scala', 'dart', 'asm', 'asmx', 'aspx', 'jsp', 'php', 'php3', 'php4', 'php5', 'php7', 'php8', 'phps', 'phtml', 'py', 'ipynb'
+]
+
+file_ext = {
+    'python': 'py', 'sh': 'sh', 'txt': 'txt', 'html': 'html', 'css': 'css', 'js': 'js', 'json': 'json', 'xml': 'xml', 'yaml': 'yaml', 'yml': 'yml', 'md': 'md', 'csv': 'csv', 'tsv': 'tsv', 'sql': 'sql', 'java': 'java', 'c': 'c', 'cpp': 'cpp', 'h': 'h', 'hpp': 'hpp', 'cs': 'cs', 'php': 'php', 'rb': 'rb', 'pl': 'pl', 'go': 'go', 'rs': 'rs', 'swift': 'swift', 'kt': 'kt', 'clj': 'clj', 'cljs': 'cljs', 'r': 'r', 'm': 'm', 'jl': 'jl', 'groovy': 'groovy', 'scala': 'scala', 'dart': 'dart', 'asm': 'asm', 'asmx': 'asmx', 'aspx': 'aspx', 'jsp': 'jsp', 'php3': 'php3', 'php4': 'php4', 'php5': 'php5', 'php7': 'php7', 'php8': 'php8', 'phps': 'phps', 'phtml': 'phtml', 'py': 'py', 'ipynb': 'ipynb'
+}
+
+file_comments = {
+    'python': '#', 'sh': '#', 'txt': '', 'html': '<!-- -->', 'css': '/* */', 'js': '/* */', 'json': '/* */', 'xml': '<!-- -->', 'yaml': '#', 'yml': '#', 'md': '<!-- -->', 'csv': '#', 'tsv': '#', 'sql': '--', 'java': '//', 'c': '//', 'cpp': '//', 'h': '//', 'hpp': '//', 'cs': '//', 'php': '//', 'rb': '#', 'pl': '#', 'go': '//', 'rs': '//', 'swift': '//', 'kt': '//', 'clj': ';;', 'cljs': ';;', 'r': '#', 'm': '#', 'jl': '#', 'groovy': '//', 'scala': '//', 'dart': '//', 'asm': ';', 'asmx': ';', 'aspx': '<!-- -->', 'jsp': '<!-- -->', 'php3': '//', 'php4': '//', 'php5': '//', 'php7': '//', 'php8': '//', 'phps': '//', 'phtml': '<!-- -->', 'py': '#', 'ipynb': '#'
+}
+
 def main():
     '''Contains the main loop that allows the user to interact with the agent.'''
     
@@ -50,14 +62,31 @@ def main():
                                 command_output += line
                                 print(line, end='')
                     command_outputs += command_output
+                continue
+            elif '```tool_code' in component:
+                # We want to execute this as python code
+                python_code = component[12:-3]
+                print(f'Python code: {python_code}')
+                exec(python_code)
 
-            elif '```python' in component:
-                # Filename is the first line of the Python code as a comment
-                filename = component.split('\n')[1].split('# ')[1].strip()
-                
-                # Write the Python code to a file
-                with open(filename, 'w') as f:
-                    f.write(component[9:-3])
+            lines = component.split('\n')
+            name = lines[0][3:]
+            if name in file_types:
+                # Find the location of the comment on the second line
+                comment = lines[1]
+                # If the comment has a space, treat it as start and end
+                comment_syntax = file_comments[name]
+                if len(token := comment_syntax.split(' ')) == 2:
+                    comment_start, comment_end = token
+                    if comment.startswith(comment_start) and comment.endswith(comment_end):
+                        filename = comment[len(comment_start):-len(comment_end)+1].strip()
+                else:
+                    filename = comment[len(comment_syntax):].strip()
+                if filename:
+                    # Write the code to a file
+                    with open(f'{filename}', 'w') as f:
+                        f.write(component[len(''.join(lines[:2]))+2:-3])
+            
         else:
             if not command_outputs:
                 command_outputs = "<<<STDOUT EMPTY>>>"
